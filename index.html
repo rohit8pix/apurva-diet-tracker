@@ -126,6 +126,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired.');
 
             const DATA = {
                 goalWeight: 65,
@@ -199,29 +200,27 @@
             };
 
             const toggleWeightVisibility = () => {
+                console.log('Toggle button clicked. Current isWeightHidden:', isWeightHidden);
                 isWeightHidden = !isWeightHidden;
                 localStorage.setItem('isWeightHidden', JSON.stringify(isWeightHidden));
                 applyWeightVisibility();
             };
 
             const applyWeightVisibility = () => {
-                if (isWeightHidden) {
-                    currentWeightStatSpan.classList.add('blurred-text');
-                    currentWeightStatSpan.classList.remove('unblurred-text');
-                    goalWeightStatSpan.classList.add('blurred-text');
-                    goalWeightStatSpan.classList.remove('unblurred-text');
-                    weightToGoStatSpan.classList.add('blurred-text');
-                    weightToGoStatSpan.classList.remove('unblurred-text');
-                    toggleWeightVisibilityBtn.textContent = 'Show Weight Details';
-                } else {
-                    currentWeightStatSpan.classList.remove('blurred-text');
-                    currentWeightStatSpan.classList.add('unblurred-text');
-                    goalWeightStatSpan.classList.remove('blurred-text');
-                    goalWeightStatSpan.classList.add('unblurred-text');
-                    weightToGoStatSpan.classList.remove('blurred-text');
-                    weightToGoStatSpan.classList.add('unblurred-text');
-                    toggleWeightVisibilityBtn.textContent = 'Hide Weight Details';
-                }
+                console.log('applyWeightVisibility called. isWeightHidden:', isWeightHidden);
+                const spans = [currentWeightStatSpan, goalWeightStatSpan, weightToGoStatSpan];
+                spans.forEach(span => {
+                    if (isWeightHidden) {
+                        span.classList.add('blurred-text');
+                        span.classList.remove('unblurred-text');
+                        console.log(`Added blurred-text to ${span.id}. Current classes: ${span.className}`);
+                    } else {
+                        span.classList.remove('blurred-text');
+                        span.classList.add('unblurred-text');
+                        console.log(`Removed blurred-text from ${span.id}. Current classes: ${span.className}`);
+                    }
+                });
+                toggleWeightVisibilityBtn.textContent = isWeightHidden ? 'Show Weight Details' : 'Hide Weight Details';
             };
 
             toggleWeightVisibilityBtn.addEventListener('click', toggleWeightVisibility);
@@ -379,6 +378,7 @@
             });
             
             const initializeApp = () => {
+                console.log('initializeApp called.');
                 updateDashboardStats();
                 applyWeightVisibility(); // Apply visibility on load
                 renderDailyPlan();
