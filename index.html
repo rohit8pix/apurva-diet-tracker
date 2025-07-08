@@ -14,6 +14,14 @@
         .task-item.completed label { text-decoration: line-through; color: #6b7280; }
         .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 40vh; }
         @media (min-width: 768px) { .chart-container { height: 400px; } }
+        /* New styles for blurring */
+        .blurred-text {
+            filter: blur(5px);
+            transition: filter 0.3s ease-in-out;
+        }
+        .unblurred-text {
+            filter: blur(0px);
+        }
     </style>
     <!-- Chosen Palette: Warm Neutrals with Soft Indigo Accents -->
     <!-- Application Structure Plan: A task-oriented, multi-tab single-page application. The structure uses four main views: a Dashboard for a quick overview, a Daily Plan for interactive tracking, a Progress Tracker for visualizing weight loss, and a Resources section for static lists. This tab-based structure was chosen to logically separate the different user tasks (viewing, tracking, analyzing, and referencing) into distinct, uncluttered interfaces, which enhances usability and focus. The user can easily navigate between these core functions without leaving the page. -->
@@ -50,18 +58,18 @@
                 <div class="grid md:grid-cols-3 gap-6 text-center">
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold text-slate-500">Current Weight</h3>
-                        <p id="current-weight-stat" class="text-4xl font-bold text-indigo-600 mt-2">-- kg</p>
+                        <p class="text-4xl font-bold text-indigo-600 mt-2"><span id="current-weight-stat" class="blurred-text">-- kg</span></p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold text-slate-500">Goal Weight</h3>
-                        <p class="text-4xl font-bold text-green-600 mt-2">65 kg</p>
+                        <p class="text-4xl font-bold text-green-600 mt-2"><span id="goal-weight-stat" class="blurred-text">65 kg</span></p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold text-slate-500">Weight to Go</h3>
-                        <p id="weight-to-go-stat" class="text-4xl font-bold text-amber-600 mt-2">-- kg</p>
+                        <p class="text-4xl font-bold text-amber-600 mt-2"><span id="weight-to-go-stat" class="blurred-text">-- kg</span></p>
                     </div>
                 </div>
-                
+
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Today's Core Meal (OMAD)</h3>
                     <p class="text-slate-600 mb-4">Your one meal is designed to be nutrient-dense, providing everything you need for the day. Remember to eat mindfully between 2:00-2:30 PM.</p>
@@ -177,15 +185,17 @@
             const weightChartCtx = document.getElementById('weightChart').getContext('2d');
             let weightChart;
 
-            const currentWeightStat = document.getElementById('current-weight-stat');
-            const weightToGoStat = document.getElementById('weight-to-go-stat');
+            const currentWeightStatSpan = document.getElementById('current-weight-stat');
+            const goalWeightStatSpan = document.getElementById('goal-weight-stat');
+            const weightToGoStatSpan = document.getElementById('weight-to-go-stat');
             const toggleWeightVisibilityBtn = document.getElementById('toggle-weight-visibility-btn');
 
             const updateDashboardStats = () => {
                 const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].weight : DATA.initialWeight;
-                currentWeightStat.textContent = `${currentWeight} kg`;
+                currentWeightStatSpan.textContent = `${currentWeight} kg`;
+                goalWeightStatSpan.textContent = `${DATA.goalWeight} kg`; // Ensure goal weight is also updated
                 const weightToGo = (currentWeight - DATA.goalWeight).toFixed(1);
-                weightToGoStat.textContent = `${weightToGo > 0 ? weightToGo : 0} kg`;
+                weightToGoStatSpan.textContent = `${weightToGo > 0 ? weightToGo : 0} kg`;
             };
 
             const toggleWeightVisibility = () => {
@@ -196,12 +206,20 @@
 
             const applyWeightVisibility = () => {
                 if (isWeightHidden) {
-                    currentWeightStat.classList.add('hidden');
-                    weightToGoStat.classList.add('hidden');
+                    currentWeightStatSpan.classList.add('blurred-text');
+                    currentWeightStatSpan.classList.remove('unblurred-text');
+                    goalWeightStatSpan.classList.add('blurred-text');
+                    goalWeightStatSpan.classList.remove('unblurred-text');
+                    weightToGoStatSpan.classList.add('blurred-text');
+                    weightToGoStatSpan.classList.remove('unblurred-text');
                     toggleWeightVisibilityBtn.textContent = 'Show Weight Details';
                 } else {
-                    currentWeightStat.classList.remove('hidden');
-                    weightToGoStat.classList.remove('hidden');
+                    currentWeightStatSpan.classList.remove('blurred-text');
+                    currentWeightStatSpan.classList.add('unblurred-text');
+                    goalWeightStatSpan.classList.remove('blurred-text');
+                    goalWeightStatSpan.classList.add('unblurred-text');
+                    weightToGoStatSpan.classList.remove('blurred-text');
+                    weightToGoStatSpan.classList.add('unblurred-text');
                     toggleWeightVisibilityBtn.textContent = 'Hide Weight Details';
                 }
             };
