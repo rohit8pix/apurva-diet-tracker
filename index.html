@@ -61,7 +61,7 @@
                         <p id="weight-to-go-stat" class="text-4xl font-bold text-amber-600 mt-2">-- kg</p>
                     </div>
                 </div>
-
+                
                 <div class="bg-white p-6 rounded-xl shadow-md">
                     <h3 class="text-xl font-semibold mb-4">Today's Core Meal (OMAD)</h3>
                     <p class="text-slate-600 mb-4">Your one meal is designed to be nutrient-dense, providing everything you need for the day. Remember to eat mindfully between 2:00-2:30 PM.</p>
@@ -69,6 +69,10 @@
                         <p class="font-semibold text-slate-800">🥣 1 cup mixed millet khichdi with veggies</p>
                         <p class="text-sm text-slate-500 ml-5">+ Raw salad, buttermilk, raw garlic, and a handful of nuts/seeds.</p>
                     </div>
+                </div>
+                
+                <div class="text-center mt-6">
+                    <button id="toggle-weight-visibility-btn" class="bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-lg hover:bg-slate-300 transition shadow">Show Weight Details</button>
                 </div>
             </section>
 
@@ -159,7 +163,8 @@
             
             let weightData = JSON.parse(localStorage.getItem('weightData')) || [];
             let dailyLog = JSON.parse(localStorage.getItem('dailyLog')) || {};
-            
+            let isWeightHidden = JSON.parse(localStorage.getItem('isWeightHidden')) !== false; // Default to true (hidden)
+
             const todayKey = new Date().toISOString().split('T')[0];
 
             if (!dailyLog.date || dailyLog.date !== todayKey) {
@@ -172,12 +177,36 @@
             const weightChartCtx = document.getElementById('weightChart').getContext('2d');
             let weightChart;
 
+            const currentWeightStat = document.getElementById('current-weight-stat');
+            const weightToGoStat = document.getElementById('weight-to-go-stat');
+            const toggleWeightVisibilityBtn = document.getElementById('toggle-weight-visibility-btn');
+
             const updateDashboardStats = () => {
                 const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].weight : DATA.initialWeight;
-                document.getElementById('current-weight-stat').textContent = `${currentWeight} kg`;
+                currentWeightStat.textContent = `${currentWeight} kg`;
                 const weightToGo = (currentWeight - DATA.goalWeight).toFixed(1);
-                document.getElementById('weight-to-go-stat').textContent = `${weightToGo > 0 ? weightToGo : 0} kg`;
+                weightToGoStat.textContent = `${weightToGo > 0 ? weightToGo : 0} kg`;
             };
+
+            const toggleWeightVisibility = () => {
+                isWeightHidden = !isWeightHidden;
+                localStorage.setItem('isWeightHidden', JSON.stringify(isWeightHidden));
+                applyWeightVisibility();
+            };
+
+            const applyWeightVisibility = () => {
+                if (isWeightHidden) {
+                    currentWeightStat.classList.add('hidden');
+                    weightToGoStat.classList.add('hidden');
+                    toggleWeightVisibilityBtn.textContent = 'Show Weight Details';
+                } else {
+                    currentWeightStat.classList.remove('hidden');
+                    weightToGoStat.classList.remove('hidden');
+                    toggleWeightVisibilityBtn.textContent = 'Hide Weight Details';
+                }
+            };
+
+            toggleWeightVisibilityBtn.addEventListener('click', toggleWeightVisibility);
 
             const switchView = (viewName) => {
                 views.forEach(view => view.classList.add('hidden'));
@@ -333,6 +362,7 @@
             
             const initializeApp = () => {
                 updateDashboardStats();
+                applyWeightVisibility(); // Apply visibility on load
                 renderDailyPlan();
                 createWeightChart();
                 renderList('grocery-list-container', DATA.groceryList);
