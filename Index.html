@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apurva's OMAD Diet & Weight Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .nav-active { border-color: #4f46e5; color: #4f46e5; background-color: #eef2ff; }
+        .nav-inactive { border-color: transparent; }
+        .task-item.completed label { text-decoration: line-through; color: #6b7280; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 300px; max-height: 40vh; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals with Soft Indigo Accents -->
+    <!-- Application Structure Plan: A task-oriented, multi-tab single-page application. The structure uses four main views: a Dashboard for a quick overview, a Daily Plan for interactive tracking, a Progress Tracker for visualizing weight loss, and a Resources section for static lists. This tab-based structure was chosen to logically separate the different user tasks (viewing, tracking, analyzing, and referencing) into distinct, uncluttered interfaces, which enhances usability and focus. The user can easily navigate between these core functions without leaving the page. -->
+    <!-- Visualization & Content Choices: 
+        1. Weight Data -> Goal: Track Change -> Viz/Method: Line Chart (Chart.js/Canvas) -> Interaction: Users input their weight, and the chart updates dynamically. -> Justification: A line chart is the most intuitive way to show trends over time, making it perfect for tracking weight loss progress against a goal line. 
+        2. Daily Routines -> Goal: Organize/Inform -> Viz/Method: Interactive Checklists (HTML/CSS/JS) -> Interaction: Users check off completed tasks, with the state saved locally for the current day. -> Justification: Checklists turn a static plan into an actionable, engaging tool, encouraging daily adherence. 
+        3. Grocery/Prep Lists -> Goal: Inform -> Viz/Method: Toggleable content panes (HTML/CSS/JS) -> Interaction: User clicks a button to switch between the two lists. -> Justification: This keeps reference material neatly organized and accessible on demand without cluttering the primary tracking views. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 max-w-5xl">
+
+        <header class="text-center my-6">
+            <h1 class="text-4xl font-bold text-indigo-700">Apurva's Wellness Journey</h1>
+            <p class="text-slate-500 mt-2">Your personal One-Meal-A-Day (OMAD) plan and progress tracker.</p>
+        </header>
+
+        <nav class="flex justify-center border-b-2 border-slate-200 mb-8">
+            <button data-view="dashboard" class="nav-btn px-6 py-3 font-medium border-b-4 nav-active">Dashboard</button>
+            <button data-view="plan" class="nav-btn px-6 py-3 font-medium border-b-4 nav-inactive">Daily Plan</button>
+            <button data-view="progress" class="nav-btn px-6 py-3 font-medium border-b-4 nav-inactive">Track Progress</button>
+            <button data-view="resources" class="nav-btn px-6 py-3 font-medium border-b-4 nav-inactive">Resources</button>
+        </nav>
+
+        <main id="app-content">
+
+            <section id="dashboard-view" class="view space-y-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-indigo-500">
+                    <h2 class="text-2xl font-semibold mb-4">Welcome Back, Apurva!</h2>
+                    <p class="text-slate-600">This is your central hub for tracking your diet, activity, and progress. Consistency is the key to achieving your goals. Let's make today a great day!</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6 text-center">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-500">Current Weight</h3>
+                        <p id="current-weight-stat" class="text-4xl font-bold text-indigo-600 mt-2">-- kg</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-500">Goal Weight</h3>
+                        <p class="text-4xl font-bold text-green-600 mt-2">65 kg</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold text-slate-500">Weight to Go</h3>
+                        <p id="weight-to-go-stat" class="text-4xl font-bold text-amber-600 mt-2">-- kg</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-semibold mb-4">Today's Core Meal (OMAD)</h3>
+                    <p class="text-slate-600 mb-4">Your one meal is designed to be nutrient-dense, providing everything you need for the day. Remember to eat mindfully between 2:00-2:30 PM.</p>
+                    <div class="bg-slate-50 p-4 rounded-lg">
+                        <p class="font-semibold text-slate-800">🥣 1 cup mixed millet khichdi with veggies</p>
+                        <p class="text-sm text-slate-500 ml-5">+ Raw salad, buttermilk, raw garlic, and a handful of nuts/seeds.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="plan-view" class="view hidden">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-semibold mb-2">Today's Interactive Plan</h2>
+                    <p class="text-slate-600 mb-6">Check off each item as you complete it. Your progress for today will be saved in this browser.</p>
+                    <div id="daily-plan-container" class="space-y-6"></div>
+                </div>
+            </section>
+
+            <section id="progress-view" class="view hidden">
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h2 class="text-2xl font-semibold mb-4">Log Your Weight</h2>
+                    <p class="text-slate-600 mb-4">Enter your weight in kilograms. Tracking regularly helps you stay motivated and see your progress clearly.</p>
+                    <div class="flex items-center space-x-4">
+                        <input type="number" id="weight-input" placeholder="e.g., 94.5" class="w-full md:w-1/3 p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                        <button id="add-weight-btn" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition shadow">Add Entry</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4">Weight Progress Chart</h2>
+                    <div class="chart-container">
+                        <canvas id="weightChart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="resources-view" class="view hidden">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                     <h2 class="text-2xl font-semibold mb-4">Plan Resources</h2>
+                     <p class="text-slate-600 mb-6">Here you'll find your weekly grocery list and a preparation checklist to help you stay organized and prepared for the week ahead.</p>
+                     <div class="flex justify-center border border-slate-200 rounded-lg p-1 bg-slate-100 mb-6 max-w-sm mx-auto">
+                        <button id="show-grocery-btn" class="w-1/2 py-2 font-medium bg-white rounded-md shadow text-indigo-600">Grocery List</button>
+                        <button id="show-prep-btn" class="w-1/2 py-2 font-medium">Prep Checklist</button>
+                     </div>
+                     <div id="grocery-list-container"></div>
+                     <div id="prep-list-container" class="hidden"></div>
+                 </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const DATA = {
+                goalWeight: 65,
+                initialWeight: 95,
+                dailyPlan: {
+                    "🌞 Morning Routine (Fasted)": {
+                        "wake_up": "7:00 AM: Wake up + 1 glass warm water + ½ tsp soaked methi seeds",
+                        "walk": "7:30 AM: 20–30 min brisk walk in sunlight",
+                        "tea_morning": "8:00 AM: Herbal tea (ginger + tulsi + lemon)",
+                        "snack_morning": "10:00 AM: 1 soaked fig + 4 soaked almonds",
+                        "flaxseed": "11:30 AM: 1 tsp ground flaxseed in warm water"
+                    },
+                    "🥗 OMAD Meal (2:00–2:30 PM)": {
+                        "main_meal": "Main Plate: 1 cup mixed millet khichdi with dal & vegetables",
+                        "ghee": "Side: Add 1 tsp ghee to meal",
+                        "salad": "Side: Raw salad (carrot, cucumber)",
+                        "buttermilk": "Side: 1 glass buttermilk",
+                        "garlic": "Side: 1 clove raw garlic + curry leaves",
+                        "nuts_seeds": "Side: Handful of roasted chana or pumpkin/sunflower seeds",
+                        "fruit": "Side: 1 small bowl of fruit (papaya/guava)",
+                    },
+                    "🌙 Evening Routine (No Food After 3 PM)": {
+                        "tea_evening": "5:30 PM: Herbal tea (cinnamon/clove/tulsi)",
+                        "walk_evening": "7:00 PM: Gentle walk (10–15 mins) or yoga",
+                        "tea_night": "9:00 PM: Chamomile tea / hot water"
+                    }
+                },
+                groceryList: {
+                    "Grains & Millets": ["Foxtail millet (250g)", "Bajra (250g)", "Kodo millet (250g)"],
+                    "Legumes / Pulses": ["Moong dal (250g)", "Chana dal (200g)", "Kala chana (100g)"],
+                    "Vegetables": ["Carrot (4)", "Cucumber (2)", "Beetroot (2)", "Bottle gourd (lauki) (2)", "Spinach (2 bunches)", "Tomatoes (6)", "Onion (4)", "Garlic (2 bulbs)", "Ginger (100g)"],
+                    "Fruits": ["Papaya (1 small)", "Pomegranate (2)", "Lemon (4)"],
+                    "Nuts & Seeds": ["Almonds (100g)", "Figs (7 pcs)", "Pumpkin seeds (50g)", "Flaxseed (50g)", "Roasted chana (100g)"],
+                    "Spices & Oils": ["Turmeric", "Cumin (Jeera)", "Methi seeds", "Hing", "Ghee (100ml)"],
+                    "Herbal": ["Tulsi tea bags", "Cinnamon sticks"],
+                },
+                prepList: {
+                    "Soak Ahead": ["Soak almonds + 1 fig daily", "Soak methi seeds overnight", "Sprout kala chana or moong"],
+                    "Chop & Store": ["Dice carrots, beetroot, cucumber for salad", "Prep spinach, lauki", "Mince garlic & ginger paste"],
+                    "Batch Cook / Prep": ["Make khichdi base for 2-3 days", "Prepare a dal batch", "Set curd for buttermilk", "Roast chana/nuts/seeds mix"],
+                }
+            };
+            
+            let weightData = JSON.parse(localStorage.getItem('weightData')) || [];
+            let dailyLog = JSON.parse(localStorage.getItem('dailyLog')) || {};
+            
+            const todayKey = new Date().toISOString().split('T')[0];
+
+            if (!dailyLog.date || dailyLog.date !== todayKey) {
+                dailyLog = { date: todayKey, tasks: {} };
+                localStorage.setItem('dailyLog', JSON.stringify(dailyLog));
+            }
+            
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const views = document.querySelectorAll('.view');
+            const weightChartCtx = document.getElementById('weightChart').getContext('2d');
+            let weightChart;
+
+            const updateDashboardStats = () => {
+                const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].weight : DATA.initialWeight;
+                document.getElementById('current-weight-stat').textContent = `${currentWeight} kg`;
+                const weightToGo = (currentWeight - DATA.goalWeight).toFixed(1);
+                document.getElementById('weight-to-go-stat').textContent = `${weightToGo > 0 ? weightToGo : 0} kg`;
+            };
+
+            const switchView = (viewName) => {
+                views.forEach(view => view.classList.add('hidden'));
+                document.getElementById(`${viewName}-view`).classList.remove('hidden');
+
+                navButtons.forEach(btn => {
+                    btn.classList.remove('nav-active');
+                    btn.classList.add('nav-inactive');
+                    if (btn.dataset.view === viewName) {
+                        btn.classList.add('nav-active');
+                        btn.classList.remove('nav-inactive');
+                    }
+                });
+            };
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', (e) => switchView(e.target.dataset.view));
+            });
+
+            const renderDailyPlan = () => {
+                const container = document.getElementById('daily-plan-container');
+                container.innerHTML = '';
+                for (const section in DATA.dailyPlan) {
+                    const sectionEl = document.createElement('div');
+                    sectionEl.innerHTML = `<h3 class="text-xl font-semibold text-indigo-700 mb-3">${section}</h3>`;
+                    const taskList = document.createElement('div');
+                    taskList.className = 'space-y-2';
+                    for (const taskKey in DATA.dailyPlan[section]) {
+                        const taskId = `${section.replace(/\s+/g, '_')}-${taskKey}`;
+                        const isCompleted = dailyLog.tasks[taskId] || false;
+                        const taskItem = document.createElement('div');
+                        taskItem.className = `task-item bg-slate-50 p-3 rounded-lg flex items-center ${isCompleted ? 'completed' : ''}`;
+                        taskItem.innerHTML = `
+                            <input type="checkbox" id="${taskId}" data-task-id="${taskId}" class="h-5 w-5 rounded-full border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" ${isCompleted ? 'checked' : ''}>
+                            <label for="${taskId}" class="ml-3 text-slate-700 cursor-pointer">${DATA.dailyPlan[section][taskKey]}</label>
+                        `;
+                        taskList.appendChild(taskItem);
+                    }
+                    sectionEl.appendChild(taskList);
+                    container.appendChild(sectionEl);
+                }
+            };
+            
+            document.getElementById('daily-plan-container').addEventListener('change', (e) => {
+                 if (e.target.type === 'checkbox') {
+                    const taskId = e.target.dataset.taskId;
+                    dailyLog.tasks[taskId] = e.target.checked;
+                    localStorage.setItem('dailyLog', JSON.stringify(dailyLog));
+                    e.target.closest('.task-item').classList.toggle('completed', e.target.checked);
+                }
+            });
+            
+            const createWeightChart = () => {
+                const labels = weightData.map(d => new Date(d.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short'}));
+                const dataPoints = weightData.map(d => d.weight);
+                const goalData = Array(labels.length).fill(DATA.goalWeight);
+
+                if (weightChart) {
+                    weightChart.destroy();
+                }
+
+                weightChart = new Chart(weightChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Your Weight (kg)',
+                                data: dataPoints,
+                                borderColor: '#4f46e5',
+                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                tension: 0.1,
+                                borderWidth: 2,
+                                fill: true,
+                            },
+                            {
+                                label: 'Goal Weight (kg)',
+                                data: goalData,
+                                borderColor: '#16a34a',
+                                borderDash: [5, 5],
+                                borderWidth: 2,
+                                pointRadius: 0,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: false, suggestedMin: DATA.goalWeight - 5 }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+            };
+
+            document.getElementById('add-weight-btn').addEventListener('click', () => {
+                const input = document.getElementById('weight-input');
+                const weight = parseFloat(input.value);
+                if (weight && weight > 0) {
+                    weightData.push({ date: new Date().toISOString().split('T')[0], weight: weight });
+                    localStorage.setItem('weightData', JSON.stringify(weightData));
+                    input.value = '';
+                    createWeightChart();
+                    updateDashboardStats();
+                } else {
+                    alert('Please enter a valid weight.');
+                }
+            });
+            
+            const renderList = (containerId, listData) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                 for (const category in listData) {
+                    const sectionEl = document.createElement('div');
+                    sectionEl.className = 'mb-6';
+                    sectionEl.innerHTML = `<h3 class="text-xl font-semibold text-indigo-700 mb-3">${category}</h3>`;
+                    const ul = document.createElement('ul');
+                    ul.className = 'list-disc list-inside space-y-2 text-slate-600';
+                    listData[category].forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item;
+                        ul.appendChild(li);
+                    });
+                    sectionEl.appendChild(ul);
+                    container.appendChild(sectionEl);
+                 }
+            };
+            
+            const groceryBtn = document.getElementById('show-grocery-btn');
+            const prepBtn = document.getElementById('show-prep-btn');
+            const groceryContainer = document.getElementById('grocery-list-container');
+            const prepContainer = document.getElementById('prep-list-container');
+
+            groceryBtn.addEventListener('click', () => {
+                groceryContainer.classList.remove('hidden');
+                prepContainer.classList.add('hidden');
+                groceryBtn.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                prepBtn.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+            });
+
+            prepBtn.addEventListener('click', () => {
+                prepContainer.classList.remove('hidden');
+                groceryContainer.classList.add('hidden');
+                prepBtn.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                groceryBtn.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+            });
+            
+            const initializeApp = () => {
+                updateDashboardStats();
+                renderDailyPlan();
+                createWeightChart();
+                renderList('grocery-list-container', DATA.groceryList);
+                renderList('prep-list-container', DATA.prepList);
+                switchView('dashboard');
+            };
+
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
